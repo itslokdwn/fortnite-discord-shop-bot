@@ -1,0 +1,27 @@
+name: Fortnite Shop to Discord (Every 15 Minutes)
+
+on:
+  schedule:
+    - cron: "*/15 * * * *"  # 🔁 Runs every 15 minutes
+  workflow_dispatch:         # ✅ Allows manual triggering from GitHub
+
+jobs:
+  post_shop:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.x'
+
+      - name: Install dependencies
+        run: pip install requests
+
+      - name: Run shop bot
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+        run: python shop_bot.py
