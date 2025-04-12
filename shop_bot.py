@@ -4,7 +4,7 @@ import os
 
 # Discord webhook stored in GitHub secret
 webhook_url = os.environ.get("DISCORD_WEBHOOK")
-api_url = "https://fortnite-api.com/v2/shop/br"
+api_url = "https://fortnite-api.com/v2/aes"
 
 def send_shop_items():
     response = requests.get(api_url)
