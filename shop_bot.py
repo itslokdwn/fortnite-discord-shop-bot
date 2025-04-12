@@ -9,8 +9,7 @@ import requests
  
  # Correct endpoint for shop data
  api_url = "https://fortnite-api.com/v2/cosmetics/new"
- # Correct endpoint for shop data.  Using the "br" endpoint is more reliable.
- api_url = "https://fortnite-api.com/v2/cosmetics/br"
+
  
  def send_shop_items():
      """
