@@ -2,7 +2,7 @@ import requests
 import time
 import os
 from datetime import datetime, timezone
-import json  # Import the json module
+import json
 
 # Discord webhook and API key stored in GitHub secrets
 webhook_url = os.environ.get("DISCORD_WEBHOOK")
@@ -16,6 +16,7 @@ def send_new_cosmetics():
     """
     Fetches new Fortnite cosmetics and sends an embed to a Discord webhook
     with the information provided in the JSON data.
+    Skips adding fields to the embed if the corresponding data is null or missing.
     Handles errors robustly and includes detailed logging.
     """
     if not webhook_url or not api_key:
@@ -45,11 +46,13 @@ def send_new_cosmetics():
 
         for item in new_items["br"]:  # Assuming 'br' key contains the relevant items
             name = item.get("name", "Unknown Item")
-            description = item.get("description", "No description provided.")
-            item_type = item.get("type", {}).get("displayValue", "Unknown Type")
-            rarity = item.get("rarity", {}).get("displayValue", "Unknown Rarity")
-            image_url = item.get("images", {}).get("icon", None)
-            added_date = item.get("added", "Unknown Date")
+            description = item.get("description")
+            item_type_data = item.get("type", {})
+            item_type = item_type_data.get("displayValue")
+            rarity_data = item.get("rarity", {})
+            rarity = rarity_data.get("displayValue")
+            image_url = item.get("images", {}).get("icon")
+            added_date = item.get("added")
 
             if not image_url:
                 print(f"Warning: No image URL found for item: {name}. Skipping.")
@@ -57,17 +60,24 @@ def send_new_cosmetics():
 
             embed = {
                 "title": f"New Cosmetic: {name}",
-                "description": description,
                 "color": 5763719,  # Soft blue color
-                "fields": [
-                    {"name": "Type", "value": item_type, "inline": True},
-                    {"name": "Rarity", "value": rarity, "inline": True},
-                    {"name": "Added", "value": added_date, "inline": False}
-                ],
+                "fields": [],
                 "image": {"url": image_url},
                 "footer": {"text": "Fortnite New Cosmetics • Powered by fortnite-api.com"},
                 "timestamp": datetime.now(timezone.utc).isoformat()
             }
+
+            if description:
+                embed["description"] = description
+
+            if item_type:
+                embed["fields"].append({"name": "Type", "value": item_type, "inline": True})
+
+            if rarity:
+                embed["fields"].append({"name": "Rarity", "value": rarity, "inline": True})
+
+            if added_date:
+                embed["fields"].append({"name": "Added", "value": added_date, "inline": False})
 
             webhook_response = requests.post(webhook_url, json={"embeds": [embed]})
             if webhook_response.status_code != 204:
