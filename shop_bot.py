@@ -2,25 +2,26 @@ import requests
 import time
 import os
 from datetime import datetime, timezone
+import json  # Import the json module
 
 # Discord webhook and API key stored in GitHub secrets
 webhook_url = os.environ.get("DISCORD_WEBHOOK")
 api_key = os.environ.get("FORTNITE_API_KEY")
 
-# Correct endpoint for shop data
+# Correct endpoint for new cosmetics data
 api_url = "https://fortnite-api.com/v2/cosmetics/new"
 
 
-def send_shop_items():
+def send_new_cosmetics():
     """
-    Fetches Fortnite shop items and sends embeds to a Discord webhook.
-    Handles errors robustly and includes more detailed logging.
+    Fetches new Fortnite cosmetics and sends an embed to a Discord webhook
+    with the information provided in the JSON data.
+    Handles errors robustly and includes detailed logging.
     """
     if not webhook_url or not api_key:
-        print("Error: Discord Webhook URL or Fortnite API key is missing.  Ensure they are set as environment variables.")
+        print("Error: Discord Webhook URL or Fortnite API key is missing. Ensure they are set as environment variables.")
         return
 
-    # Add API key to headers
     headers = {
         "Authorization": api_key
     }
@@ -29,69 +30,58 @@ def send_shop_items():
         response = requests.get(api_url, headers=headers)
         response.raise_for_status()  # Raise an exception for bad status codes
 
-        shop_data = response.json()
+        cosmetics_data = response.json()
 
-        # Check if the featured section exists
-        if "featured" not in shop_data["data"]:
-            print("No featured items found in the shop data")
+        if "data" not in cosmetics_data:
+            print("Error: 'data' key not found in API response.")
+            print(f"Full response: {cosmetics_data}")
             return
 
-        featured_entries = shop_data["data"]["featured"]["entries"]
+        new_items = cosmetics_data["data"].get("items", [])
 
-        for entry in featured_entries:
-            items = entry.get("items", [])
-            for item in items:
+        if not new_items:
+            print("No new items found in the API response.")
+            return
 
-                try:
-                    response = requests.get(api_url, headers=headers)
-                    response.raise_for_status()  # Raise an exception for bad status codes
+        for item in new_items["br"]:  # Assuming 'br' key contains the relevant items
+            name = item.get("name", "Unknown Item")
+            description = item.get("description", "No description provided.")
+            item_type = item.get("type", {}).get("displayValue", "Unknown Type")
+            rarity = item.get("rarity", {}).get("displayValue", "Unknown Rarity")
+            image_url = item.get("images", {}).get("icon", None)
+            added_date = item.get("added", "Unknown Date")
 
-                    shop_data = response.json()
+            if not image_url:
+                print(f"Warning: No image URL found for item: {name}. Skipping.")
+                continue
 
-                    # Check if the data key exists
-                    if "data" not in shop_data:
-                        print("Error: 'data' key not found in API response.")
-                        print(f"Full response: {shop_data}")
-                        return
+            embed = {
+                "title": f"New Cosmetic: {name}",
+                "description": description,
+                "color": 5763719,  # Soft blue color
+                "fields": [
+                    {"name": "Type", "value": item_type, "inline": True},
+                    {"name": "Rarity", "value": rarity, "inline": True},
+                    {"name": "Added", "value": added_date, "inline": False}
+                ],
+                "image": {"url": image_url},
+                "footer": {"text": "Fortnite New Cosmetics • Powered by fortnite-api.com"},
+                "timestamp": datetime.now(timezone.utc).isoformat()
+            }
 
-                    # Iterate through all items in the data list.  The /br endpoint returns a list.
-                    for item in shop_data["data"]:
-                        name = item.get("name", "Unknown Item")
-                        # Use a more robust way to get the image URL, handling potential nested None values.
-                        image_url = item.get("images", {}).get("icon", None)
+            webhook_response = requests.post(webhook_url, json={"embeds": [embed]})
+            if webhook_response.status_code != 204:
+                print(f"Failed to send webhook for {name}: {webhook_response.status_code}")
+                print(webhook_response.text)
 
-                        if not image_url:
-                            print(f"Warning: No image URL found for item: {name}. Skipping.")
-                            continue
-
-                        embed = {
-                            "title": f"Item Shop: {name}",
-                            "image": {"url": image_url},
-                            "color": 16753920,  # Orange color
-                            "footer": {"text": "Fortnite Item Shop • Powered by fortnite-api.com"},
-                            "timestamp": datetime.now(timezone.utc).isoformat()  # Add timestamp
-                        }
-
-                        webhook_response = requests.post(webhook_url, json={"embeds": [embed]})
-                        if webhook_response.status_code != 204:
-                            print(f"Failed to send webhook: {webhook_response.status_code}")
-                            print(webhook_response.text)
-
-                        # Add a delay to avoid rate limiting
-                        time.sleep(1)
-
-                except requests.exceptions.RequestException as e:
-                    print(f"Error fetching data from Fortnite API: {e}")
-                except json.JSONDecodeError as e:
-                    print(f"Error decoding JSON: {e}")
-                    print(f"Response text: {response.text}")  # Print the response text to help debug JSON issues
+            time.sleep(1)  # Small delay to avoid rate limiting
 
     except requests.exceptions.RequestException as e:
         print(f"Error fetching data from Fortnite API: {e}")
     except json.JSONDecodeError as e:
         print(f"Error decoding JSON: {e}")
-        print(f"Response text: {response.text}")  # Print the response text to help debug JSON issues
+        print(f"Response text: {response.text}")
 
 
 if __name__ == "__main__":
-    send_shop_items()
+    send_new_cosmetics()
