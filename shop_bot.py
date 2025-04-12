@@ -11,11 +11,15 @@ api_key = os.environ.get("FORTNITE_API_KEY")
 # Correct endpoint for new cosmetics data
 api_url = "https://fortnite-api.com/v2/cosmetics/new"
 
+ALLOWED_ID_TAGS = ["EID_", "Character_", "Glider_"]
 
-def send_bundled_new_cosmetics():
+
+def send_filtered_new_cosmetics_by_id_prefix():
     """
-    Fetches new Fortnite cosmetics and bundles items with the same name
-    into a single, larger embed for each unique item name.
+    Fetches new Fortnite cosmetics and bundles items whose IDs start with
+    any of the tags in ALLOWED_ID_TAGS into a single, larger embed
+    for each unique item name. This ensures that the IDs *contain*
+    the tags at the beginning, followed by other characters.
     Skips adding fields to the embed if the corresponding data is null or missing.
     Handles errors robustly and includes detailed logging.
     """
@@ -44,8 +48,13 @@ def send_bundled_new_cosmetics():
             print("No new items found in the API response.")
             return
 
+        filtered_items = [
+            item for item in new_items["br"]
+            if any(item.get("id", "").startswith(tag) for tag in ALLOWED_ID_TAGS)
+        ]
+
         bundled_items = {}
-        for item in new_items["br"]:
+        for item in filtered_items:
             name = item.get("name")
             if name:
                 if name not in bundled_items:
@@ -80,24 +89,24 @@ def send_bundled_new_cosmetics():
             # Add details for each individual item with the same name
             for item in items:
                 item_type_data = item.get("type", {})
-                item_type = item_type_data.get("displayValue")
+                item_type_value = item_type_data.get("value")
+                item_type_display = item_type_data.get("displayValue")
                 rarity_data = item.get("rarity", {})
                 rarity = rarity_data.get("displayValue")
                 added_date = item.get("added")
                 item_id = item.get("id")
 
                 details = ""
-                if item_type:
-                    details += f"**Type:** {item_type}\n"
+                if item_type_display:
+                    details += f"**Type:** {item_type_display}\n"
                 if rarity:
                     details += f"**Rarity:** {rarity}\n"
                 if added_date:
                     details += f"**Added:** {added_date}\n"
                 if item_id:
-                    details += f"**ID:** `{item_id}`\n"  # Added item ID for more detail
+                    details += f"**ID:** `{item_id}`\n"
 
                 if details:
-                    # Truncate details if it gets too long to avoid embed limits
                     if len(details) > 1000:
                         details = details[:1000] + "...\n(Details truncated)"
                     embed["fields"].append({"name": "Variant Details", "value": details, "inline": False})
@@ -117,4 +126,4 @@ def send_bundled_new_cosmetics():
 
 
 if __name__ == "__main__":
-    send_bundled_new_cosmetics()
+    send_filtered_new_cosmetics_by_id_prefix()
