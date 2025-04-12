@@ -7,7 +7,7 @@ webhook_url = os.environ.get("DISCORD_WEBHOOK")
 api_key = os.environ.get("FORTNITE_API_KEY")
 
 # Correct endpoint for shop data
-api_url = "https://fortnite-api.com/v2/shop/br"
+api_url = "https://fortnite-api.com/v2/cosmetics/new"
 
 def send_shop_items():
     # Add API key to headers
