@@ -4,10 +4,10 @@ import os
 
 # Discord webhook and API key stored in GitHub secrets
 webhook_url = os.environ.get("DISCORD_WEBHOOK")
-api_key = os.environ.get("FORTNITE_API_KEY")  # Add this to your GitHub secrets
+api_key = os.environ.get("FORTNITE_API_KEY")
 
 # Correct endpoint for shop data
-api_url = "https://fortnite-api.com/v2/cosmetics"
+api_url = "https://fortnite-api.com/v2/shop/br"
 
 def send_shop_items():
     # Add API key to headers
@@ -28,24 +28,28 @@ def send_shop_items():
         print("No featured items found in the shop data")
         return
         
-    featured_items = shop_data["data"]["featured"]["entries"]
-    for entry in featured_items:
-        # Some entries might have multiple items
-        for item in entry["items"]:
-            name = item["name"]
-            # Use the proper image URL path
-            image_url = item["images"]["icon"]
+    featured_entries = shop_data["data"]["featured"]["entries"]
+    
+    for entry in featured_entries:
+        items = entry.get("items", [])
+        for item in items:
+            name = item.get("name", "Unknown Item")
+            image_url = item.get("images", {}).get("icon", None)
             
+            if not image_url:
+                continue
+                
             embed = {
                 "title": f"Item Shop: {name}",
                 "image": {"url": image_url},
-                "color": 16753920,
+                "color": 16753920,  # Orange color
                 "footer": {"text": "Fortnite Item Shop • Powered by fortnite-api.com"}
             }
             
             webhook_response = requests.post(webhook_url, json={"embeds": [embed]})
             if webhook_response.status_code != 204:
                 print(f"Failed to send webhook: {webhook_response.status_code}")
+                print(webhook_response.text)
             
             # Add a delay to avoid rate limiting
             time.sleep(1)
