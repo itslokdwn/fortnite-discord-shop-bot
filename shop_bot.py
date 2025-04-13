@@ -11,7 +11,7 @@ api_key = os.environ.get("FORTNITE_API_KEY")
 # Correct endpoint for new cosmetics data
 api_url = "https://fortnite-api.com/v2/cosmetics/new"
 
-ALLOWED_ID_TAGS = ["EID_", "Character_", "Glider_"]
+ALLOWED_ID_TAGS = ["EID_", "Character_", "Glider_", "Loading_screen_"]
 
 
 def send_filtered_new_cosmetics_by_id_prefix():
