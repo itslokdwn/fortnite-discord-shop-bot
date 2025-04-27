@@ -1,7 +1,6 @@
 name: Fortnite Shop to Discord (Daily at 6 AM ET)
 on:
-  schedule:
-    - cron: "0 10 * * *"  # Runs at 10:00 UTC, which is 6:00 AM ET
+  # Runs at 10:00 UTC, which is 6:00 AM ET
   workflow_dispatch:      # Allows manual triggering from GitHub
 jobs:
   post_shop:
